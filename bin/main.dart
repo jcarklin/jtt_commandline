@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:jtt_commandline/src/service/gttConversion.dart';
+
+import 'package:jtt_commandline/src/service/file_conversion_service.dart';
 import 'package:prompter_jtt/prompter_jtt.dart';
 
 void main(List<String> arguments) {
@@ -11,8 +12,8 @@ void main(List<String> arguments) {
   final fromFormat = prompter.askMultiple('Select conversion format: ', buildFormatOptions());
   final File selectedFile = prompter.askMultiple('Select the file to convert: ', buildFileOptions(fromFormat));
 
-  GttConversion conversion = GttConversion(xmlInput: selectedFile.readAsStringSync());
-
+  final fileConversionService = FileConversionService.from(gttXml: selectedFile.readAsStringSync());
+  print(fileConversionService.gttTWdata);
 }
 
 List<Option> buildFileOptions(extension) {
