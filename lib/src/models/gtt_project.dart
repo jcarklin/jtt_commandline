@@ -157,20 +157,22 @@ class Pack {
   String name;
   String comment;
   String size;
-  String cards;
+  List<int> cardIndexs;
 
-  Pack({this.name, this.comment, this.size, this.cards});
+  Pack({this.name, this.comment, this.size, this.cardIndexs});
 
   Pack.fromXml(XmlElement packElement) {
     name = packElement.getAttribute('name');
     comment = packElement.getElement('Comment').innerText;
     size = packElement.getElement('Size').innerText;
-    cards = packElement.getElement('Cards').innerText;
+    cardIndexs = packElement.getElement('Cards').innerText
+        .split(',')
+        .map((element) => int.tryParse(element));
   }
 
   @override
   String toString() {
-    return 'Pack{name: $name, comment: $comment, size: $size, cards: $cards}';
+    return 'Pack{name: $name, comment: $comment, size: $size, cards: $cardIndexs}';
   }
 }
 

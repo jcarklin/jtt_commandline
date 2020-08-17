@@ -12,8 +12,10 @@ void main(List<String> arguments) {
   final fromFormat = prompter.askMultiple('Select conversion format: ', buildFormatOptions());
   final File selectedFile = prompter.askMultiple('Select the file to convert: ', buildFileOptions(fromFormat));
 
-  final fileConversionService = FileConversionService.from(gttXml: selectedFile.readAsStringSync());
+  final fileConversionService = FileConversionService.fromGtt(selectedFile.readAsStringSync());
   print(fileConversionService.gttTWdata);
+  print(fileConversionService.jttProject);
+
 }
 
 List<Option> buildFileOptions(extension) {

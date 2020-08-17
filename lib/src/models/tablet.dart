@@ -1,9 +1,84 @@
-import 'dart:collection';
+import 'dart:convert';
+
 import 'thread.dart';
+
+class Tablet {
+  final ThreadingDirection threadingDirection;
+  final List<Thread> threadPositions;
+  final Twist startingTwist;
+  final List<Pick> picks;
+
+  // query: pick cache?
+
+  Tablet(this.threadingDirection, this.threadPositions, this.startingTwist)
+      : picks = <Pick>[];
+
+  Tablet.fromJson(Map<String, dynamic> json)
+      : threadingDirection = json['threadingDirection'],
+        threadPositions = json['threadPositions'],
+        startingTwist = json['startingTwist'],
+        picks = json['picks'];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'threadingDirection': threadingDirection != null
+          ? jsonEncode(threadingDirection.toString()) : null,
+      'threadPositions': threadPositions != null
+          ? threadPositions.map((e) => e.toJson()).toList() : null,
+      'startingTwist': startingTwist != null ? jsonEncode(startingTwist.toString()) : null,
+      'picks': picks != null ? picks.map((e) => e.toJson()).toList() : null
+    };
+  }
+
+  void turn(TurningDirection turningDirection, {bool isTwist}) {
+    var lastVisible = lastPick.visibleIndex;
+    var lastTwist = lastPick.twist;
+    final newTwist = isTwist ?? false == false ? lastTwist :
+      lastTwist==Twist.Z ? Twist.S : Twist.Z;
+    final newVisible = turningDirection==TurningDirection.forwards
+        ? (lastVisible == threadPositions.length-1 ? 0 : lastVisible+1)
+        : turningDirection==TurningDirection.backwards
+        ? (lastVisible == 0 ? threadPositions.length-1 : lastVisible-1)
+        : lastVisible;
+    picks.add(Pick(newTwist, turningDirection, newVisible));
+  }
+
+  Pick get lastPick => picks.isEmpty ? Pick(startingTwist,TurningDirection.float, 0) : picks.last;
+
+  @override
+  String toString() {
+    return json.encode(this);
+  }
+}
+
+class Pick {
+  final Twist twist; //S or Z
+  final TurningDirection turned; //forwards or backwards or float
+  final int visibleIndex; //This is the index of the Thread which is visible on the weaving.
+
+  Pick(this.twist, this.turned, this.visibleIndex);
+
+  Pick.fromJson(Map<String, dynamic> json)
+      : twist = json['twist'],
+        turned = json['turned'],
+        visibleIndex = json['visibleIndex'];
+
+  Map<String, dynamic> toJson() => {
+        'twist': twist != null ? jsonEncode(twist.toString()) : null,
+        'turned': turned != null ? jsonEncode(turned.toString()) : null,
+        'visibleIndex': jsonEncode(visibleIndex ?? 0),
+      };
+
+  @override
+  String toString() {
+    return json.encode(this);
+  }
+
+}
 
 enum ThreadingDirection {
   clockwise, //DA CB
-  anticlockwise,//AD BC
+  anticlockwise, //AD BC
   poles // TF TB BF BB,
 }
 
@@ -16,55 +91,4 @@ enum TurningDirection {
 enum Twist {
   S,
   Z,
-}
-
-
-class Tablet {
-
-  final ThreadingDirection _threadingDirection;
-  final Pick _startingPosition;// query: Should be immutable?
-  final List<Pick> _picks = <Pick>[];
-
-  Tablet (this._threadingDirection, List<Thread>threading, Twist twist) :
-    _startingPosition = Pick._create(twist, TurningDirection.float, threading);
-
-  void turn(TurningDirection turningDirection) {
-    _picks.add(Pick._turn(turningDirection,
-        _picks.isEmpty?_startingPosition.threads:_picks.last.threads,
-        _picks.isEmpty?_startingPosition.twist:_picks.last.twist,));
-  }
-
-  List<Pick> get picks => _picks;
-
-  @override
-  String toString() {
-    return ('${_startingPosition.twist} ${_startingPosition._threads}');
-  }
-}
-
-class Pick {
-  final Twist twist; //S or Z
-  final TurningDirection turned;//forwards or backwards or float
-  final List<Thread> _threads;// query: Should be immutable?
-  static final Map<String, Tablet> _pickCache = {};
-  
-  factory Pick._turn(TurningDirection turningDirection, List<Thread> threads, Twist twist) {
-    var queue = DoubleLinkedQueue<Thread>.from(threads);
-    if (turningDirection==TurningDirection.forwards) {
-      queue.addFirst(queue.removeLast());
-    } else if (turningDirection==TurningDirection.backwards) {
-      queue.addLast(queue.removeFirst());
-    }
-    var pick = Pick._create(twist, turningDirection, List.from(queue));
-    return pick;
-  }
-  
-  Pick._create(this.twist, this.turned, this._threads);
-
-  List<Thread> get threads => _threads;
-
-  @override
-  String toString() {
-    return '[$twist]\n[$turned]\n[$_threads]';
-  }
 }
