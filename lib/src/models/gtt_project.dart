@@ -34,8 +34,10 @@ class Pattern {
   Pattern.fromXml(XmlElement patternElement) {
     name = patternElement.getElement('Name').innerText;
     type = patternElement.getAttribute('Type');
-    notes = patternElement.getElement('Notes').descendants.map((e) =>
-        e.innerText.trim()).join(' ').trim();
+    notes = patternElement.getElement('Notes')!=null
+        ? patternElement.getElement('Notes').descendants.map((e) =>
+          e.innerText.trim()).join(' ').trim()
+        : null;
     cards = Cards.fromXml(patternElement.getElement('Cards'));
     packs = Packs.fromXml(patternElement.getElement('Packs'));
     picks = Picks.fromXml(patternElement.getElement('Picks'));
@@ -162,12 +164,12 @@ class Pack {
   Pack({this.name, this.comment, this.size, this.cardIndexs});
 
   Pack.fromXml(XmlElement packElement) {
-    name = packElement.getAttribute('name');
+    name = packElement.getAttribute('Name');
     comment = packElement.getElement('Comment').innerText;
     size = packElement.getElement('Size').innerText;
     cardIndexs = packElement.getElement('Cards').innerText
         .split(',')
-        .map((element) => int.tryParse(element));
+        .map((element) => int.tryParse(element)).toList();
   }
 
   @override
