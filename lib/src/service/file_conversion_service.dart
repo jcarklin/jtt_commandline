@@ -1,8 +1,8 @@
+import 'package:hex/hex.dart';
 import 'package:jtt_commandline/jtt_commandline.dart';
 import 'package:jtt_commandline/src/models/gtt_project.dart';
 import 'package:jtt_commandline/src/models/project.dart';
 import 'package:xml/xml.dart';
-
 
 class FileConversionService {
 
@@ -54,7 +54,10 @@ class FileConversionService {
     jttProject.deck = gttCards.map((e) => _convertGttCardToTablet(e)).toList();
     final gttPacksMap = <String,List<int>>{};
     gttPattern.packs.packs.forEach((pack) => gttPacksMap[pack.name] = pack.cardIndexs);
+    jttProject.palettes = {gttPattern.palette.name : gttPattern.palette.colour
+        .map((e) => convertColorToHex(int.tryParse(e.text))).toList()};
     final gttPicks = gttPattern.picks.pick;
+
 
     gttPicks.forEach((actionParent) {
       final actions = actionParent.actions.action;
@@ -80,7 +83,22 @@ class FileConversionService {
         }
       });
     });
+
+    jttProject.packs = gttPacksMap;
     return jttProject;
+  }
+
+  String convertColorToHex(int colorDec) {
+    var r = colorDec & 0xff;
+    var g = (colorDec >> 8)  & 0xff;
+    var b = (colorDec >> 16) & 0xff;
+    r = (r<0)?-r:r;
+    g = (g<0)?-g:g;
+    b = (b<0)?-b:b;
+    r = (r>255)?255:r;
+    g = (g>255)?255:g;
+    b = (b>255)?255:b;
+    return HEX.encode([r,g,b]);
   }
 
   Tablet _convertGttCardToTablet(Card gttCard) {
