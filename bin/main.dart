@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:jtt_commandline/src/service/file_conversion_service.dart';
 import 'package:prompter_jtt/prompter_jtt.dart';
 
-void main(List<String> arguments) {
+Future<void> main(List<String> arguments) async {
 
   final prompter = Prompter();
   if (!prompter.askBinary('Would you like to convert a tablet weaving file?')) {
@@ -12,10 +12,13 @@ void main(List<String> arguments) {
   final fromFormat = prompter.askMultiple('Select conversion format: ', buildFormatOptions());
   final File selectedFile = prompter.askMultiple('Select the file to convert: ', buildFileOptions(fromFormat));
 
-  final fileConversionService = FileConversionService.fromGtt(selectedFile.readAsStringSync());
+  final fileConversionService = FileConversionService.fromGtt(selectedFile);
   print(fileConversionService.gttTWdata);
   print(fileConversionService.jttProject);
-
+  print(await fileConversionService.writeAsJttFile());
+  fileConversionService.jttProject.deck[2].threadPositions[1].colourIndex=6;
+  fileConversionService.filename=fileConversionService.filename+'2';
+  print(await fileConversionService.writeAsJttFile());
 }
 
 List<Option> buildFileOptions(extension) {

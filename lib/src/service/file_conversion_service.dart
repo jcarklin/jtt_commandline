@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:hex/hex.dart';
 import 'package:jtt_commandline/jtt_commandline.dart';
 import 'package:jtt_commandline/src/models/gtt_project.dart';
@@ -8,10 +10,15 @@ class FileConversionService {
 
   TwData _twData;
   Project _jttProject;
+  File gttFile;
+  File jttFile;
+  String filename;
 
-  FileConversionService.fromGtt(String gttXml) {
-    if (gttXml != null) {
-      _twData = _fromGttXml(gttXml);
+  FileConversionService.fromGtt(File gttXml) {
+    gttFile = gttXml;
+    filename = '${gttFile.path.replaceAll('gtt', 'jtt')}';
+    if (gttFile != null) {
+      _twData = _fromGttXml(gttFile.readAsStringSync());
       _jttProject = _fromTwData(_twData);
     }
   }
@@ -22,6 +29,8 @@ class FileConversionService {
       _twData = _fromJttProject(_jttProject);
     }
   }
+
+
 
   TwData get gttTWdata => _twData;
 
@@ -37,7 +46,8 @@ class FileConversionService {
   }
 
   Project _fromTwData(TwData twData) {
-    final jttProject = Project(ProjectType.tabletWeaving,patternSource: twData.source);
+    final jttProject = Project(ProjectType.tabletWeaving,patternSource: twData.source,
+        slantRepresentation: SlantRepresentation.threadAngle);
     final gttPattern = twData.pattern;
     switch(gttPattern.type.toLowerCase()) {
       case 'threaded':
@@ -51,7 +61,8 @@ class FileConversionService {
     }
 
     final gttCards = gttPattern.cards.card;
-    jttProject.deck = gttCards.map((e) => _convertGttCardToTablet(e)).toList();
+    jttProject.deck=List(gttCards.length);
+    gttCards.asMap().forEach((k,v) => jttProject.deck[k]=_convertGttCardToTablet(k,v));
     final gttPacksMap = <String,List<int>>{};
     gttPattern.packs.packs.forEach((pack) => gttPacksMap[pack.name] = pack.cardIndexs);
     jttProject.palettes = {gttPattern.palette.name : gttPattern.palette.colour
@@ -88,6 +99,10 @@ class FileConversionService {
     return jttProject;
   }
 
+  Future<String> writeAsJttFile() {
+    return jttProject.toJttFile(filename);
+  }
+
   String convertColorToHex(int colorDec) {
     var r = colorDec & 0xff;
     var g = (colorDec >> 8)  & 0xff;
@@ -101,13 +116,12 @@ class FileConversionService {
     return HEX.encode([r,g,b]);
   }
 
-  Tablet _convertGttCardToTablet(Card gttCard) {
+  Tablet _convertGttCardToTablet(int index, Card gttCard) {
     return Tablet(ThreadingDirection.anticlockwise, _convertGttHolesToThreads(gttCard.holes),
-        gttCard.threading==Threading.S?Twist.S:Twist.Z);
+        gttCard.threading==Threading.S?Twist.S:Twist.Z, index);
   }
 
   List<Thread> _convertGttHolesToThreads(Holes holes) {
-    //TODO  map colour index to hex colour code using palette
     return holes.colour.asMap().entries.map((e) => Thread(e.key, e.value))
         .toList(growable: false);
   }
@@ -115,7 +129,7 @@ class FileConversionService {
   void _processTurn(Action action, Tablet tablet, bool twist) {
 
     if (action.type==Type.TURN) {
-      var turningDirection = TurningDirection.float;
+      var turningDirection = TurningDirection.idle;
       if (action.dir==Dir.F) {
         turningDirection = TurningDirection.forwards;
       } else if (action.dir==Dir.B) {

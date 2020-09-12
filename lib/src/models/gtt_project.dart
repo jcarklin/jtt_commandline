@@ -116,7 +116,7 @@ class Card {
 
 class Holes {
 
-  List<String> colour;
+  List<int> colour;
   String count;
 
   Holes({
@@ -126,7 +126,7 @@ class Holes {
 
   Holes.fromXml(XmlElement holesElement) {
     count = holesElement.getAttribute('Count');
-    colour = holesElement.findElements('Colour').map((e) => e.innerText).toList();
+    colour = holesElement.findElements('Colour').map((e) => int.tryParse(e.innerText)).toList();
   }
 
   @override
