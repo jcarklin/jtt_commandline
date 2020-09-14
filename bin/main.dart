@@ -6,19 +6,19 @@ import 'package:prompter_jtt/prompter_jtt.dart';
 Future<void> main(List<String> arguments) async {
 
   final prompter = Prompter();
-  if (!prompter.askBinary('Would you like to convert a tablet weaving file?')) {
-    exit(0);
-  }
+
   final fromFormat = prompter.askMultiple('Select conversion format: ', buildFormatOptions());
   final File selectedFile = prompter.askMultiple('Select the file to convert: ', buildFileOptions(fromFormat));
 
-  final fileConversionService = FileConversionService.fromGtt(selectedFile);
+  final fileConversionService = fromFormat=='gtt'
+      ?FileConversionService.fromGtt(selectedFile)
+      :FileConversionService.fromJtt(selectedFile);
   print(fileConversionService.gttTWdata);
   print(fileConversionService.jttProject);
-  print(await fileConversionService.writeAsJttFile());
-  fileConversionService.jttProject.deck[2].threadPositions[1].colourIndex=6;
-  fileConversionService.filename=fileConversionService.filename+'2';
-  print(await fileConversionService.writeAsJttFile());
+
+  fromFormat=='gtt'
+      ?print(await fileConversionService.writeAsJttFile())
+      :print(await fileConversionService.writeAsGttFile());
 }
 
 List<Option> buildFileOptions(extension) {

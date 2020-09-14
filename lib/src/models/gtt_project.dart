@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:xml/xml.dart';
 
 class TwData {
@@ -13,10 +15,53 @@ class TwData {
     pattern = Pattern.fromXml(twDataElement.getElement('Pattern'));
   }
 
+  String toXml() {
+    final builder = XmlBuilder();
+    builder.processing('xml', 'version="1.0"');
+    builder.element('TWData', nest: () {
+      builder.element('Source', nest: () {
+        builder.text(source);
+      });
+      builder.element('Version', nest: () {
+        builder.text(version);
+      });
+    });
+    return builder.buildDocument().toXmlString(pretty: true);
+    //      builder.element('book', nest: () {
+//        builder.element('title', nest: () {
+//          builder.attribute('lang', 'en');
+//          builder.text('Growing a Language');
+//        });
+//        builder.element('price', nest: 29.99);
+//      });
+//      builder.element('book', nest: () {
+//        builder.element('title', nest: () {
+//          builder.attribute('lang', 'en');
+//          builder.text('Learning XML');
+//        });
+//        builder.element('price', nest: 39.95);
+//      });
+//      builder.element('price', nest: 132.00);
+//    });
+//    final bookshelfXml = builder.buildDocument();
+  }
+
+  String toGttFile(String filename) {
+    var xmlstring = toXml();
+    try {
+      File(filename).writeAsStringSync(xmlstring);
+      return 'File $filename successfully written';
+    } on Exception catch (e) {
+      return 'Writing File $filename Failed!!';
+    }
+  }
+
   @override
   String toString() {
     return 'TwData{source: $source, version: $version, pattern: $pattern}';
   }
+
+
 }
 
 class Pattern {

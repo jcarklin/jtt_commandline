@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:hex/hex.dart';
@@ -12,49 +13,47 @@ class FileConversionService {
   Project _jttProject;
   File gttFile;
   File jttFile;
-  String filename;
 
   FileConversionService.fromGtt(File gttXml) {
     gttFile = gttXml;
-    filename = '${gttFile.path.replaceAll('gtt', 'jtt')}';
     if (gttFile != null) {
       _twData = _fromGttXml(gttFile.readAsStringSync());
-      _jttProject = _fromTwData(_twData);
+      _jttProject = _fromTwData();
     }
   }
 
-  FileConversionService.fromJtt(String jttJson) {
+  FileConversionService.fromJtt(File jttJson) {
+    jttFile = jttJson;
+    
     if (jttJson != null) {
-      _jttProject = _fromJttJson(jttJson);
-      _twData = _fromJttProject(_jttProject);
+      _jttProject = _fromJttJson(jttJson.readAsStringSync());
+      _twData = _fromJttProject();
     }
   }
-
-
 
   TwData get gttTWdata => _twData;
 
   Project get jttProject => _jttProject;
 
-  //Todo String get gttTWdataXml => _twData.gttXml;
-
-  //Todo String get jttJson => jsonEncode(_jttProject);
-
+  
   TwData _fromGttXml(String xmlInput) {
     final document = XmlDocument.parse(xmlInput);
     return TwData.fromXml(document.getElement('TWData'));
   }
 
-  Project _fromTwData(TwData twData) {
-    final jttProject = Project(ProjectType.tabletWeaving,patternSource: twData.source,
-        slantRepresentation: SlantRepresentation.threadAngle);
-    final gttPattern = twData.pattern;
+  Project _fromTwData() {
+    final jttProject = Project(
+        gttTWdata.pattern.name,
+        Project.PROJECT_TYPE_TABLET_WEAVING,
+        patternSource: gttTWdata.source,
+        slantRepresentation: Project.SLANT_THREAD);
+    final gttPattern = gttTWdata.pattern;
     switch(gttPattern.type.toLowerCase()) {
       case 'threaded':
-        jttProject.patternType = PatternType.threadedIn;
+        jttProject.patternType = Project.PATTERN_TYPE_THREADED_IN;
         break;
       case 'doubleface'://|BrokenTwill|Brocade|LetteredBand}>'
-        jttProject.patternType = PatternType.doubleWeave;
+        jttProject.patternType = Project.PATTERN_TYPE_DOUBLE_WEAVE;
         break;
       default:
         throw FormatException('Unsupported Pattern Type');
@@ -99,8 +98,35 @@ class FileConversionService {
     return jttProject;
   }
 
+  Project _fromJttJson(String jttJson) {
+    _jttProject = Project.fromJson(jsonDecode(jttJson));
+    return jttProject;
+  }
+
+  TwData _fromJttProject() {
+    var cards = List<Card>(jttProject.deck.length);
+    jttProject.deck.asMap().forEach((index,tablet) => cards[index]=_convertJttTabletToGttCard(tablet));
+    var pattern = Pattern(
+        name: jttProject.name,
+        notes: 'Converted fro JTT file',
+        cards: Cards(
+            card: cards,
+            count: '${jttProject.deck.length}'),
+        type: jttProject.type,
+    );
+    return TwData(
+        source: jttProject.patternSource,
+        version: '1.15',
+        pattern: pattern);
+
+  }
+  
   Future<String> writeAsJttFile() {
-    return jttProject.toJttFile(filename);
+    return jttProject.toJttFile('${gttFile.path.replaceAll('gtt', 'jtt')}');
+  }
+
+  String writeAsGttFile() {
+    return gttTWdata.toGttFile('${jttFile.path.replaceAll('jtt', 'gtt')}');
   }
 
   String convertColorToHex(int colorDec) {
@@ -117,8 +143,22 @@ class FileConversionService {
   }
 
   Tablet _convertGttCardToTablet(int index, Card gttCard) {
-    return Tablet(ThreadingDirection.anticlockwise, _convertGttHolesToThreads(gttCard.holes),
-        gttCard.threading==Threading.S?Twist.S:Twist.Z, index);
+    return Tablet(Tablet.THREADING_DIRECTION_ANTICLOCKWISE, _convertGttHolesToThreads(gttCard.holes),
+        gttCard.threading==Threading.S?Tablet.TWIST_S:Tablet.TWIST_Z, index, []);
+  }
+
+  Card _convertJttTabletToGttCard(Tablet jttTablet) {
+    var holes = _convertJttThreadsToGttHoles(jttTablet.threadPositions);
+    var threading = jttTablet.startingTwist==Tablet.TWIST_S?Threading.S:Threading.Z;
+    return Card(
+        holes: holes,
+        threading: threading,
+        curThread: threading,
+        curPos: '0',
+        curHoles: holes,
+        cardHoles: holes.colour.length.toString(),
+        number: jttTablet.deckIndex.toString(),
+        );
   }
 
   List<Thread> _convertGttHolesToThreads(Holes holes) {
@@ -126,28 +166,25 @@ class FileConversionService {
         .toList(growable: false);
   }
 
+  Holes _convertJttThreadsToGttHoles(List<Thread> threads) {
+    return  Holes(
+        colour: threads.map((e) => e.colourIndex).toList(),
+        count: threads.length.toString());
+  }
+
   void _processTurn(Action action, Tablet tablet, bool twist) {
 
     if (action.type==Type.TURN) {
-      var turningDirection = TurningDirection.idle;
+      var turningDirection = Tablet.TURNING_DIRECTION_IDLE;
       if (action.dir==Dir.F) {
-        turningDirection = TurningDirection.forwards;
+        turningDirection = Tablet.TURNING_DIRECTION_FORWARDS;
       } else if (action.dir==Dir.B) {
-        turningDirection = TurningDirection.backwards;
+        turningDirection = Tablet.TURNING_DIRECTION_BACKWARDS;
       }
       tablet.turn(turningDirection,isTwist: twist);
     }
   }
-
-  TwData _fromJttProject(Project jttProject) {
-//todo
-    return null;
-  }
-
-  Project _fromJttJson(String jttJson) {
-    //todo
-    return null;
-  }
+  
 }
 
 

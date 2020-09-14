@@ -5,37 +5,59 @@ import 'package:jtt_commandline/src/models/tablet.dart';
 
 class Project {
 
-  ProjectType type;
-  PatternType patternType;
+  static const String PROJECT_TYPE_TABLET_WEAVING = 'tabletWeaving';
+
+  static const String PATTERN_TYPE_THREADED_IN = 'threadedIn';
+  static const String PATTERN_TYPE_DOUBLE_WEAVE = 'doubleWeave';
+  static const String PATTERN_TYPE_BROKEN_TWILL = 'brokenTwill';
+
+  static const String SLANT_TABLET = 'tabletSlant';
+  static const String SLANT_THREAD = 'threadAngle';
+  static const String SLANT_ARROWS = 'arrows';
+
+  String name;
+  String type;
+  String patternType;
   String patternSource;
   List<Tablet> deck;
   Map<String,List<int>> packs;
   Map<String,List<String>> palettes; //<palettes name, hexadecimal color values>
-  SlantRepresentation slantRepresentation = SlantRepresentation.tabletSlant;
+  String slantRepresentation = SLANT_TABLET;
 
-  //todo card slant or thread slant, clockwise anti clockwise, holeLabels,starting position (hole 1 is Front or back top)
+  //tODO clockwise anti clockwise, holeLabels,starting position (hole 1 is Front or back top)
 
-  Project (this.type, {this.patternType, this.patternSource, this.deck, this.slantRepresentation}) {
-    slantRepresentation = slantRepresentation ?? SlantRepresentation.tabletSlant;
+  Project (this.name, this.type, {this.patternType, this.patternSource, this.deck, this.slantRepresentation}) {
+    slantRepresentation = slantRepresentation ?? SLANT_TABLET;
   }
 
-  Project.fromJson(Map<String, dynamic> json)
-      : type = json['projectType'],
-        patternType = json['patternType'],
-        patternSource = json['patternSource'],
-        deck = json['deck'],
-        slantRepresentation = json['slantRepresentation'];
+  factory Project.fromJson(Map<String, dynamic> json) {
+    var deck = <Tablet>[];
+    var jsondeck = json['deck'] as List;
+    jsondeck.forEach((value) {
+      deck.add(Tablet.fromJson(value));
+    });
+    return Project(json['name'], json['projectType'],
+        patternType:  json['patternType'],
+        patternSource: json['patternSource'],
+        deck: deck,
+        slantRepresentation: json['slantRepresentation'],
+    );
+  }
+      
 
   Map<String, dynamic> toJson() => {
-    'projectType': type != null ? type.toString() : null,
-    'patternType': patternType != null ? patternType.toString() : null,
+    'name': name,
+    'projectType': type,
+    'patternType': patternType,
     'patternSource': patternSource,
     'deck': deck != null ? deck.map((e) => e.toJson()).toList() : null,
     'packs': packs ?? packs,
     'palette': palettes ?? palettes,
-    'slantRep': slantRepresentation.toString().split('.')[1],
+    'slantRep': slantRepresentation,
   };
 
+  
+  
   Future<String> toJttFile(String filename) {
     return Future.sync(() {
       return File(filename).writeAsString(toString())
@@ -54,18 +76,3 @@ class Project {
   }
 }
 
-enum ProjectType {
-  tabletWeaving,
-}
-
-enum PatternType {
-  threadedIn,
-  doubleWeave,
-  brokenTwill
-}
-
-enum SlantRepresentation {
-  tabletSlant,
-  threadAngle,
-  arrows
-}
