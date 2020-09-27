@@ -3,13 +3,17 @@ description: A tablet weaving command-line application.
 version: 0.0.1
 
 environment:
-  sdk: ^2.2.0
+  sdk: '>=2.7.0 <3.0.0'
 
 dependencies:
   prompter_jtt: ^0.0.2
   xml: ^4.3.0
   hex: ^0.1.2
+  json_annotation: ^3.0.0
+  enum_to_string: ^1.0.13
 
 dev_dependencies:
   pedantic: ^1.0.0
   test: ^1.0.0
+  build_runner: ^1.0.0
+  json_serializable: ^3.2.0

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:xml/xml.dart';
 
 class TwData {
@@ -17,7 +18,7 @@ class TwData {
 
   String toXml() {
     final builder = XmlBuilder();
-    builder.processing('xml', 'version="1.0"');
+    //builder.processing('xml', 'version="1.0"');
     builder.element('TWData', nest: () {
       builder.element('Source', nest: () {
         builder.text(source);
@@ -25,6 +26,7 @@ class TwData {
       builder.element('Version', nest: () {
         builder.text(version);
       });
+      pattern.toXml(builder);
     });
     return builder.buildDocument().toXmlString(pretty: true);
     //      builder.element('book', nest: () {
@@ -46,15 +48,16 @@ class TwData {
 //    final bookshelfXml = builder.buildDocument();
   }
 
-  String toGttFile(String filename) {
-    var xmlstring = toXml();
-    try {
-      File(filename).writeAsStringSync(xmlstring);
-      return 'File $filename successfully written';
-    } on Exception catch (e) {
-      return 'Writing File $filename Failed!!';
-    }
+  Future<String> toGttFile(String filename) {
+    return Future.sync(() {
+      return File(filename).writeAsString(toXml()).catchError(() {
+        return 'Writing File $filename Failed!!';
+      }).then((value) {
+        return 'File $filename successfully written';
+      });
+    });
   }
+
 
   @override
   String toString() {
@@ -65,8 +68,9 @@ class TwData {
 }
 
 class Pattern {
+
   String name;
-  String type;
+  PatternType type;
   String notes;
   Cards cards;
   Packs packs;
@@ -78,15 +82,36 @@ class Pattern {
 
   Pattern.fromXml(XmlElement patternElement) {
     name = patternElement.getElement('Name').innerText;
-    type = patternElement.getAttribute('Type');
+    type = EnumToString.fromString(PatternType.values, patternElement.getAttribute('Type'));
     notes = patternElement.getElement('Notes')!=null
         ? patternElement.getElement('Notes').descendants.map((e) =>
-          e.innerText.trim()).join(' ').trim()
-        : null;
+          e.innerText.trim()).join('\n').trim()
+        : '';
     cards = Cards.fromXml(patternElement.getElement('Cards'));
     packs = Packs.fromXml(patternElement.getElement('Packs'));
     picks = Picks.fromXml(patternElement.getElement('Picks'));
     palette = Palette.fromXml(patternElement.getElement('Palette'));
+  }
+
+  void toXml(final XmlBuilder patternBuilder) {
+    patternBuilder.element('Pattern', nest: () {
+      patternBuilder.attribute('Type',
+          EnumToString.convertToString(type));
+      patternBuilder.element('Name', nest: () {
+        patternBuilder.cdata(name);
+      });
+      notes = (notes??'')+'\nExported from JTT';
+      patternBuilder.element('Notes', nest: () {
+        notes.split('\n').asMap().forEach((index,element) {
+          patternBuilder.element('L${index+1}', nest: () {
+            patternBuilder.cdata(element);
+          });
+        });
+      });
+      cards.toXml(patternBuilder);
+      packs ??= Packs(count: '0');
+      packs.toXml(patternBuilder);
+    });
   }
 
   @override
@@ -94,6 +119,11 @@ class Pattern {
     return 'Pattern{name: $name, notes: $notes, cards: $cards, packs: $packs, '
         'picks: $picks, palette: $palette, type: $type}';
   }
+
+}
+
+enum PatternType {
+  Threaded, DoubleFace, BrokenTwill, Brocade, LetteredBand
 }
 
 class Cards {
@@ -107,6 +137,15 @@ class Cards {
     count = cardsXml.getAttribute('Count');
     card = cardsXml.findElements('Card').map((element) => Card.fromXml(element))
         .toList();
+  }
+
+  void toXml(final XmlBuilder builder) {
+    builder.element('Cards', nest: () {
+      builder.attribute('Count', count);
+      card.forEach((element) { 
+        element.toXml(builder);
+      });
+    });
   }
 
   @override
@@ -150,6 +189,24 @@ class Card {
     curHoles = Holes.fromXml(cardElement.getElement('CurHoles'));
 
   }
+  
+  void toXml(XmlBuilder builder) {
+    builder.element('Card', nest: () {
+      builder.attribute('Holes', cardHoles);
+      builder.attribute('Number', number);
+      holes.toXml(builder, 'Holes');
+      builder.element('Threading', nest: () {
+        builder.text(threading==Threading.S?'S':'Z');
+      });
+      builder.element('CurThread', nest: () {
+        builder.text(curThread==Threading.S?'S':'Z');
+      });
+      builder.element('CurPos', nest: () {
+        builder.text(curPos);
+      });
+      holes.toXml(builder, 'CurHoles');
+    });
+  }
 
   @override
   String toString() {
@@ -174,10 +231,23 @@ class Holes {
     colour = holesElement.findElements('Colour').map((e) => int.tryParse(e.innerText)).toList();
   }
 
+
+  void toXml(XmlBuilder builder, String name) {
+    builder.element(name, nest: () {
+      builder.attribute('Count', count);
+      colour.asMap().forEach((index, element) {
+        builder.element('Colour', nest: () {
+          builder.text(colour[index]);
+        });
+      });
+    });
+  }
+
   @override
   String toString() {
     return 'Holes{colour: $colour, count: $count}';
   }
+
 }
 
 class Packs {
@@ -192,6 +262,17 @@ class Packs {
   Packs.fromXml(XmlElement packsElement) {
     count = packsElement.getAttribute('Count');
     packs = packsElement.findElements('Pack').map((e) => Pack.fromXml(e)).toList();
+  }
+
+  void toXml(final XmlBuilder builder) {
+    builder.element('Packs', nest: () {
+      builder.attribute('Count', count);
+      if (packs!=null) {
+        packs.forEach((element) {
+          element.toXml(builder);
+        });
+      }
+    });
   }
 
   @override
@@ -216,11 +297,27 @@ class Pack {
         .split(',')
         .map((element) => int.tryParse(element)).toList();
   }
+  
+  void toXml(XmlBuilder builder) {
+    builder.element('Pack', nest: () {
+      builder.attribute('Name', name);
+      builder.element('Comment', nest: () {
+        builder.cdata(comment??'');
+      });
+      builder.element('Size', nest: () {
+        builder.text(size);
+      });
+      builder.element('Cards', nest: () {
+        builder.text(cardIndexs.join(','));
+      });
+    });
+  }
 
   @override
   String toString() {
     return 'Pack{name: $name, comment: $comment, size: $size, cards: $cardIndexs}';
   }
+
 }
 
 class Palette {

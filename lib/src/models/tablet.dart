@@ -1,7 +1,12 @@
 import 'dart:convert';
 
+import 'package:json_annotation/json_annotation.dart';
+
 import 'thread.dart';
 
+part 'tablet.g.dart';
+
+@JsonSerializable()
 class Tablet {
 
   static const String THREADING_DIRECTION_CLOCKWISE = 'clockwise'; //DA CB
@@ -25,29 +30,9 @@ class Tablet {
   Tablet(this.threadingDirection, this.threadPositions, this.startingTwist,
       this.deckIndex, this.picks);
 
-  factory Tablet.fromJson(Map<String, dynamic> json) {
-    var threads = <Thread>[];
-    var picks = <Pick>[];
-    (json['threadPositions'] as List).forEach((value) {
-      threads.add(Thread.fromJson(value));
-    });
-    (json['picks'] as List).forEach((value) {
-      picks.add(Pick.fromJson(value, threads));
-    });
-    return Tablet(json['threadingDirection'], threads,
-        json['startingTwist'], json['index'], picks);
-  }
+  factory Tablet.fromJson(Map<String, dynamic> json) => _$TabletFromJson(json);
 
-  Map<String, dynamic> toJson() {
-    return {
-      'index': deckIndex,
-      'threadingDirection': threadingDirection,
-      'threadPositions': threadPositions != null
-          ? threadPositions.map((e) => e.toJson()).toList() : null,
-      'startingTwist': startingTwist,
-      'picks': picks != null ? picks.map((e) => e.toJson()).toList() : null
-    };
-  }
+  Map<String, dynamic> toJson() => _$TabletToJson(this);
 
   void turn(String turningDirection, {bool isTwist}) {
     var lastVisible = lastPick.visibleThread.index;
@@ -79,6 +64,7 @@ class Tablet {
   }
 }
 
+@JsonSerializable()
 class Pick {
   final String twist; //S or Z
   final String turned; //forwards or backwards or float
@@ -86,15 +72,9 @@ class Pick {
 
   Pick(this.twist, this.turned, this.visibleThread);
 
-  factory Pick.fromJson(Map<String, dynamic> json, List<Thread> threads) {
-    return Pick(json['twist'], json['turned'], threads[json['visibleIndex']]);
-  }
+  factory Pick.fromJson(Map<String, dynamic> json) => _$PickFromJson(json);
 
-  Map<String, dynamic> toJson() => {
-        'twist': twist,
-        'turned': turned,
-        'visibleIndex': visibleThread.index,
-      };
+  Map<String, dynamic> toJson() => _$PickToJson(this);
 
   String get pickKey => '$twist$turned${visibleThread.index}';
 

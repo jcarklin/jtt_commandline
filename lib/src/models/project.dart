@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:json_annotation/json_annotation.dart';
 import 'package:jtt_commandline/src/models/tablet.dart';
 
+part 'project.g.dart';
+
+@JsonSerializable()
 class Project {
 
   static const String PROJECT_TYPE_TABLET_WEAVING = 'tabletWeaving';
@@ -23,40 +27,17 @@ class Project {
   Map<String,List<int>> packs;
   Map<String,List<String>> palettes; //<palettes name, hexadecimal color values>
   String slantRepresentation = SLANT_TABLET;
+  String extraInfo;
 
   //tODO clockwise anti clockwise, holeLabels,starting position (hole 1 is Front or back top)
 
-  Project (this.name, this.type, {this.patternType, this.patternSource, this.deck, this.slantRepresentation}) {
+  Project (this.name, this.type, {this.patternType, this.patternSource, this.deck, this.slantRepresentation, this.extraInfo}) {
     slantRepresentation = slantRepresentation ?? SLANT_TABLET;
   }
 
-  factory Project.fromJson(Map<String, dynamic> json) {
-    var deck = <Tablet>[];
-    var jsondeck = json['deck'] as List;
-    jsondeck.forEach((value) {
-      deck.add(Tablet.fromJson(value));
-    });
-    return Project(json['name'], json['projectType'],
-        patternType:  json['patternType'],
-        patternSource: json['patternSource'],
-        deck: deck,
-        slantRepresentation: json['slantRepresentation'],
-    );
-  }
-      
+  factory Project.fromJson(Map<String, dynamic> json) => _$ProjectFromJson(json);
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'projectType': type,
-    'patternType': patternType,
-    'patternSource': patternSource,
-    'deck': deck != null ? deck.map((e) => e.toJson()).toList() : null,
-    'packs': packs ?? packs,
-    'palette': palettes ?? palettes,
-    'slantRep': slantRepresentation,
-  };
-
-  
+  Map<String, dynamic> toJson() => _$ProjectToJson(this);
   
   Future<String> toJttFile(String filename) {
     return Future.sync(() {

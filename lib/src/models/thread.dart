@@ -1,26 +1,19 @@
 import 'dart:convert';
 
+import 'package:json_annotation/json_annotation.dart';
+
+part 'thread.g.dart';
+
+@JsonSerializable()
 class Thread {
-  final int _indexOnCard;
-  var _colourIndex;
+  final int index; //index on card
+  final int colourIndex;
 
-  Thread(this._indexOnCard, this._colourIndex, );
+  Thread(this.index, this.colourIndex, );
 
-  Thread.fromJson(Map<String, dynamic> json)
-      : _indexOnCard = json['index'],
-        _colourIndex = json['colour'];
+  factory Thread.fromJson(Map<String, dynamic> json) => _$ThreadFromJson(json);
 
-  Map<String, dynamic> toJson() =>
-      {
-        'index': index,
-        'colour': colourIndex,
-      };
-
-  int get colourIndex => _colourIndex;
-
-  int get index => _indexOnCard;
-
-  set colourIndex(int colourIndex) => _colourIndex = colourIndex;
+  Map<String, dynamic> toJson() => _$ThreadToJson(this);
 
   @override
   String toString() {

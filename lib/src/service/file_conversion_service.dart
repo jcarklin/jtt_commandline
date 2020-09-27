@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:hex/hex.dart';
 import 'package:jtt_commandline/jtt_commandline.dart';
 import 'package:jtt_commandline/src/models/gtt_project.dart';
@@ -46,9 +47,11 @@ class FileConversionService {
         gttTWdata.pattern.name,
         Project.PROJECT_TYPE_TABLET_WEAVING,
         patternSource: gttTWdata.source,
-        slantRepresentation: Project.SLANT_THREAD);
+        slantRepresentation: Project.SLANT_THREAD,
+        extraInfo: gttTWdata.pattern.notes);
     final gttPattern = gttTWdata.pattern;
-    switch(gttPattern.type.toLowerCase()) {
+
+    switch(EnumToString.convertToString(gttPattern.type).toLowerCase()) {
       case 'threaded':
         jttProject.patternType = Project.PATTERN_TYPE_THREADED_IN;
         break;
@@ -108,11 +111,11 @@ class FileConversionService {
     jttProject.deck.asMap().forEach((index,tablet) => cards[index]=_convertJttTabletToGttCard(tablet));
     var pattern = Pattern(
         name: jttProject.name,
-        notes: 'Converted fro JTT file',
+        notes: jttProject.extraInfo??'Converted from a JTT file',
         cards: Cards(
             card: cards,
             count: '${jttProject.deck.length}'),
-        type: jttProject.type,
+        type: convertJttPatternTypeToGtt(jttProject.patternType),
     );
     return TwData(
         source: jttProject.patternSource,
@@ -120,13 +123,13 @@ class FileConversionService {
         pattern: pattern);
 
   }
-  
+
   Future<String> writeAsJttFile() {
-    return jttProject.toJttFile('${gttFile.path.replaceAll('gtt', 'jtt')}');
+    return jttProject.toJttFile('${gttFile.path.replaceAll('.gtt', '.jtt')}');
   }
 
-  String writeAsGttFile() {
-    return gttTWdata.toGttFile('${jttFile.path.replaceAll('jtt', 'gtt')}');
+  Future<String> writeAsGttFile() {
+    return gttTWdata.toGttFile('${jttFile.path.replaceAll('.jtt', '.gtt')}');
   }
 
   String convertColorToHex(int colorDec) {
@@ -157,7 +160,7 @@ class FileConversionService {
         curPos: '0',
         curHoles: holes,
         cardHoles: holes.colour.length.toString(),
-        number: jttTablet.deckIndex.toString(),
+        number: (jttTablet.deckIndex+1).toString(),
         );
   }
 
@@ -170,6 +173,15 @@ class FileConversionService {
     return  Holes(
         colour: threads.map((e) => e.colourIndex).toList(),
         count: threads.length.toString());
+  }
+
+  PatternType convertJttPatternTypeToGtt(String jttType) {
+    switch(jttType) {
+      case 'threadedIn': return PatternType.Threaded;
+      case 'doubleWeave': return PatternType.DoubleFace;
+      case 'brokenTwill':  return PatternType.BrokenTwill;
+      default: return null;
+    }
   }
 
   void _processTurn(Action action, Tablet tablet, bool twist) {
