@@ -19,6 +19,10 @@ class Project {
   static const String SLANT_THREAD = 'threadAngle';
   static const String SLANT_ARROWS = 'arrows';
 
+  static const String THREADING_DIRECTION_CLOCKWISE = 'clockwise'; //DA CB
+  static const String THREADING_DIRECTION_ANTICLOCKWISE = 'anticlockwise'; //AD BC
+  static const String THREADING_DIRECTION_POLES = 'poles'; // TF TB BF BB
+
   String name;
   String type;
   String patternType;
@@ -27,12 +31,15 @@ class Project {
   Map<String,List<int>> packs;
   Map<String,List<String>> palettes; //<palettes name, hexadecimal color values>
   String slantRepresentation = SLANT_TABLET;
+  String threadingDirection;
   String extraInfo;
 
   //tODO clockwise anti clockwise, holeLabels,starting position (hole 1 is Front or back top)
 
-  Project (this.name, this.type, {this.patternType, this.patternSource, this.deck, this.slantRepresentation, this.extraInfo}) {
+  Project (this.name, this.type, {this.patternType, this.patternSource,
+    this.deck, this.slantRepresentation, this.threadingDirection, this.extraInfo}) {
     slantRepresentation = slantRepresentation ?? SLANT_TABLET;
+    threadingDirection = threadingDirection ?? THREADING_DIRECTION_ANTICLOCKWISE;
   }
 
   factory Project.fromJson(Map<String, dynamic> json) => _$ProjectFromJson(json);

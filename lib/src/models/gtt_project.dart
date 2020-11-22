@@ -1,19 +1,18 @@
 import 'dart:io';
 
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:xml/xml.dart';
 
 class TwData {
   String source;
   String version;
-  Pattern pattern;
+  GttPattern pattern;
 
   TwData({this.source, this.version, this.pattern});
 
   TwData.fromXml(XmlElement twDataElement) {
     source = twDataElement.getElement('Source').innerText;
     version = twDataElement.getElement('Version').innerText;
-    pattern = Pattern.fromXml(twDataElement.getElement('Pattern'));
+    pattern = GttPattern.fromXml(twDataElement.getElement('Pattern'));
   }
 
   String toXml() {
@@ -29,23 +28,6 @@ class TwData {
       pattern.toXml(builder);
     });
     return builder.buildDocument().toXmlString(pretty: true);
-    //      builder.element('book', nest: () {
-//        builder.element('title', nest: () {
-//          builder.attribute('lang', 'en');
-//          builder.text('Growing a Language');
-//        });
-//        builder.element('price', nest: 29.99);
-//      });
-//      builder.element('book', nest: () {
-//        builder.element('title', nest: () {
-//          builder.attribute('lang', 'en');
-//          builder.text('Learning XML');
-//        });
-//        builder.element('price', nest: 39.95);
-//      });
-//      builder.element('price', nest: 132.00);
-//    });
-//    final bookshelfXml = builder.buildDocument();
   }
 
   Future<String> toGttFile(String filename) {
@@ -67,22 +49,28 @@ class TwData {
 
 }
 
-class Pattern {
+class GttPattern {
+
+  static const String PATTERN_TYPE_THREADED = 'Threaded';
+  static const String PATTERN_TYPE_DOUBLE_FACE = 'DoubleFace';
+  static const String PATTERN_TYPE_BROKEN_TWILL = 'BrokenTwill';
+  //Brocade, LetteredBand
+
 
   String name;
-  PatternType type;
+  String type;
   String notes;
   Cards cards;
   Packs packs;
   Picks picks;
   Palette palette;
 
-  Pattern({this.name, this.notes, this.cards, this.packs, this.picks, this.palette,
+  GttPattern({this.name, this.notes, this.cards, this.packs, this.picks, this.palette,
     this.type,});
 
-  Pattern.fromXml(XmlElement patternElement) {
+  GttPattern.fromXml(XmlElement patternElement) {
     name = patternElement.getElement('Name').innerText;
-    type = EnumToString.fromString(PatternType.values, patternElement.getAttribute('Type'));
+    type = patternElement.getAttribute('Type');
     notes = patternElement.getElement('Notes')!=null
         ? patternElement.getElement('Notes').descendants.map((e) =>
           e.innerText.trim()).join('\n').trim()
@@ -95,22 +83,25 @@ class Pattern {
 
   void toXml(final XmlBuilder patternBuilder) {
     patternBuilder.element('Pattern', nest: () {
-      patternBuilder.attribute('Type',
-          EnumToString.convertToString(type));
+      patternBuilder.attribute('Type', type);
       patternBuilder.element('Name', nest: () {
         patternBuilder.cdata(name);
       });
       notes = (notes??'')+'\nExported from JTT';
       patternBuilder.element('Notes', nest: () {
-        notes.split('\n').asMap().forEach((index,element) {
+        notes.split('\n')
+            .where((element) => element!=null && element.isNotEmpty)
+            .toList().asMap().forEach((index,element) {
           patternBuilder.element('L${index+1}', nest: () {
             patternBuilder.cdata(element);
           });
         });
       });
       cards.toXml(patternBuilder);
-      packs ??= Packs(count: '0');
+      packs ??= Packs(count: 0);
       packs.toXml(patternBuilder);
+      picks.toXml(patternBuilder);
+      palette.toxml(patternBuilder);
     });
   }
 
@@ -122,19 +113,17 @@ class Pattern {
 
 }
 
-enum PatternType {
-  Threaded, DoubleFace, BrokenTwill, Brocade, LetteredBand
-}
-
 class Cards {
 
   List<Card> card;
-  String count;
+  int count;
 
-  Cards({this.card, this.count});
+  Cards(this.card) {
+    count = card.length;
+  }
 
   Cards.fromXml(XmlElement cardsXml) {
-    count = cardsXml.getAttribute('Count');
+    count = int.tryParse(cardsXml.getAttribute('Count'));
     card = cardsXml.findElements('Card').map((element) => Card.fromXml(element))
         .toList();
   }
@@ -219,7 +208,7 @@ class Card {
 class Holes {
 
   List<int> colour;
-  String count;
+  int count;
 
   Holes({
     this.colour,
@@ -227,7 +216,7 @@ class Holes {
   });
 
   Holes.fromXml(XmlElement holesElement) {
-    count = holesElement.getAttribute('Count');
+    count = int.tryParse(holesElement.getAttribute('Count'));
     colour = holesElement.findElements('Colour').map((e) => int.tryParse(e.innerText)).toList();
   }
 
@@ -252,7 +241,7 @@ class Holes {
 
 class Packs {
   List<Pack> packs;
-  String count;
+  int count;
 
   Packs({
     this.packs,
@@ -260,7 +249,7 @@ class Packs {
   });
 
   Packs.fromXml(XmlElement packsElement) {
-    count = packsElement.getAttribute('Count');
+    count = int.tryParse(packsElement.getAttribute('Count'));
     packs = packsElement.findElements('Pack').map((e) => Pack.fromXml(e)).toList();
   }
 
@@ -284,7 +273,7 @@ class Packs {
 class Pack {
   String name;
   String comment;
-  String size;
+  int size;
   List<int> cardIndexs;
 
   Pack({this.name, this.comment, this.size, this.cardIndexs});
@@ -292,7 +281,7 @@ class Pack {
   Pack.fromXml(XmlElement packElement) {
     name = packElement.getAttribute('Name');
     comment = packElement.getElement('Comment').innerText;
-    size = packElement.getElement('Size').innerText;
+    size = int.tryParse(packElement.getElement('Size').innerText);
     cardIndexs = packElement.getElement('Cards').innerText
         .split(',')
         .map((element) => int.tryParse(element)).toList();
@@ -323,7 +312,7 @@ class Pack {
 class Palette {
   List<Colour> colour;
   String name;
-  String size;
+  int size;
 
   Palette({
     this.colour,
@@ -333,18 +322,33 @@ class Palette {
 
   Palette.fromXml(XmlElement paletteElement) {
     name = paletteElement.getAttribute('Name');
-    size = paletteElement.getAttribute('Size');
+    size = int.tryParse(paletteElement.getAttribute('Size'));
     colour = paletteElement.findElements('Colour').map((e) => Colour.fromXml(e)).toList();
   }
 
+
+  void toxml(XmlBuilder patternBuilder) {
+    patternBuilder.element('Palette', nest: () {
+      patternBuilder.attribute('Name', name);
+      patternBuilder.attribute('Size', size);
+      colour.forEach((element) { 
+        patternBuilder.element('Colour', nest: () {
+          patternBuilder.attribute('Index', element.index);
+          patternBuilder.text(element.text);
+        });
+      });
+    });
+  }
+  
   @override
   String toString() {
     return 'Palette{colour: $colour, name: $name, size: $size}';
   }
+
 }
 
 class Colour {
-  String index;
+  int index;
   String text;
 
   Colour({
@@ -353,7 +357,7 @@ class Colour {
   });
 
   Colour.fromXml(XmlElement colourElement) {
-    index = colourElement.getAttribute('Index');
+    index = int.tryParse(colourElement.getAttribute('Index'));
     text = colourElement.innerText;
   }
 
@@ -365,41 +369,67 @@ class Colour {
 
 class Picks {
 
-  List<Pick> pick;
-  String count;
+  List<GttPick> pickList;
 
-  Picks({this.pick, this.count});
+  Picks(this.pickList);
 
   Picks.fromXml(XmlElement picksElement) {
-    count = picksElement.getAttribute('Count');
-    pick = picksElement.findElements('Pick').map((element) => Pick.fromXml(element))
+    pickList = picksElement.findElements('Pick').map((element) => GttPick.fromXml(element))
         .toList();
   }
+
+  void toXml(XmlBuilder patternBuilder) {
+    patternBuilder.element('Picks', nest: () {
+      patternBuilder.attribute('Count', pickList.length);
+      pickList.forEach((element) {
+        element.toXml(patternBuilder);
+      });
+    });
+  }
+
 }
 
-class Pick {
+class GttPick {
 
   Actions actions;
-  String index;
+  int index;
 
-  Pick({this.actions, this.index});
+  GttPick({this.actions, this.index});
 
-  Pick.fromXml(XmlElement pickElement) {
-    index = pickElement.getAttribute('Index');
+  GttPick.fromXml(XmlElement pickElement) {
+    index = int.tryParse(pickElement.getAttribute('Index'));
     actions = Actions.fromXml(pickElement.getElement('Actions'));
+  }
+
+  void toXml(XmlBuilder patternBuilder) {
+    patternBuilder.element('Pick', nest: () {
+      patternBuilder.attribute('Index', index);
+      actions.toXml(patternBuilder);
+    });
   }
 }
 
 class Actions {
 
   List<Action> action;
-  String count;
+  int count;
 
-  Actions({this.action, this.count,});
+  Actions(this.action) {
+   count = action.length;
+  }
 
   Actions.fromXml(XmlElement actionsElement) {
-    count = actionsElement.getAttribute('Count');
+    count = int.tryParse(actionsElement.getAttribute('Count'));
     action = actionsElement.findElements('Action').map((e) => Action.fromXml(e)).toList();
+  }
+
+  void toXml(XmlBuilder patternBuilder) {
+    patternBuilder.element('Actions', nest: () {
+      patternBuilder.attribute('Count', count);
+      action.forEach((element) {
+        element.toXml(patternBuilder);
+      });
+    });
   }
 
 }
@@ -408,7 +438,7 @@ class Action {
 
   Type type;
   Target target;
-  String targetId;
+  dynamic targetId;
   Dir dir;
   int dist;
 
@@ -423,7 +453,8 @@ class Action {
   Action.fromXml(XmlElement actionElement) {
     type = actionElement.getAttribute('Type')=='Turn'?Type.TURN:Type.TWIST;
     target = actionElement.getAttribute('Target')=='Pack'?Target.PACK:Target.CARD;
-    targetId = actionElement.getAttribute('TargetID');
+    final tid = actionElement.getAttribute('TargetID');
+    targetId = int.tryParse(tid)??tid;
     switch(actionElement.getAttribute('Dir')) {
       case 'F':
         dir = Dir.F;
@@ -435,6 +466,16 @@ class Action {
         dir = Dir.I;
     }
     dist = int.tryParse(actionElement.getAttribute('Dir'));
+  }
+
+  void toXml(XmlBuilder patternBuilder) {
+    patternBuilder.element('Action', nest: () {
+      patternBuilder.attribute('Type', type==Type.TURN?'Turn':'Twist');
+      patternBuilder.attribute('Target', target==Target.PACK?'Pack':'Card');
+      patternBuilder.attribute('TargetID', targetId);
+      patternBuilder.attribute('Dir', dir==Dir.F?'F':dir==Dir.B?'B':'I');
+      patternBuilder.attribute('Dist', dist);
+    });
   }
 
 }

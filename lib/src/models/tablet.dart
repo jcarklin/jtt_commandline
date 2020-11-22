@@ -9,10 +9,6 @@ part 'tablet.g.dart';
 @JsonSerializable()
 class Tablet {
 
-  static const String THREADING_DIRECTION_CLOCKWISE = 'clockwise'; //DA CB
-  static const String THREADING_DIRECTION_ANTICLOCKWISE = 'anticlockwise'; //AD BC
-  static const String THREADING_DIRECTION_POLES = 'poles'; // TF TB BF BB
-
   static const String TURNING_DIRECTION_FORWARDS = 'F'; // Away from the weaver
   static const String TURNING_DIRECTION_BACKWARDS = 'B';// Towards the weaver
   static const String TURNING_DIRECTION_IDLE= 'I'; // Skipping turn
@@ -20,14 +16,13 @@ class Tablet {
   static const String TWIST_Z = 'Z';
   static const String TWIST_S = 'S';
 
-  final String threadingDirection;
   final List<Thread> threadPositions;
   final String startingTwist;
   final List<Pick> picks;
   final pickCache = {};
   final int deckIndex;
 
-  Tablet(this.threadingDirection, this.threadPositions, this.startingTwist,
+  Tablet(this.threadPositions, this.startingTwist,
       this.deckIndex, this.picks);
 
   factory Tablet.fromJson(Map<String, dynamic> json) => _$TabletFromJson(json);
