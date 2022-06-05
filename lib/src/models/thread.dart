@@ -7,7 +7,7 @@ part 'thread.g.dart';
 @JsonSerializable()
 class Thread {
   final int index; //index on card
-  final int colourIndex;
+  final int? colourIndex;
 
   Thread(this.index, this.colourIndex, );
 

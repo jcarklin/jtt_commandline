@@ -7,11 +7,12 @@ class TwData {
   String version;
   GttPattern pattern;
 
-  TwData({this.source, this.version, this.pattern});
+  TwData({this.source = 'Guntram\'s Tabletweaving Thingy', 
+  this.version = '1.x', required this.pattern});
 
   TwData.fromXml(XmlElement twDataElement) {
-    source = twDataElement.getElement('Source').innerText;
-    version = twDataElement.getElement('Version').innerText;
+    source = twDataElement.getElement('Source')??.innerText;
+    version = twDataElement.getElement('Version')!.innerText;
     pattern = GttPattern.fromXml(twDataElement.getElement('Pattern'));
   }
 
@@ -20,12 +21,12 @@ class TwData {
     //builder.processing('xml', 'version="1.0"');
     builder.element('TWData', nest: () {
       builder.element('Source', nest: () {
-        builder.text(source);
+        builder.text(source!);
       });
       builder.element('Version', nest: () {
-        builder.text(version);
+        builder.text(version!);
       });
-      pattern.toXml(builder);
+      pattern!.toXml(builder);
     });
     return builder.buildDocument().toXmlString(pretty: true);
   }
@@ -57,22 +58,22 @@ class GttPattern {
   //Brocade, LetteredBand
 
 
-  String name;
-  String type;
-  String notes;
-  Cards cards;
-  Packs packs;
-  Picks picks;
-  Palette palette;
+  String? name;
+  String? type;
+  String? notes;
+  Cards? cards;
+  Packs? packs;
+  Picks? picks;
+  Palette? palette;
 
   GttPattern({this.name, this.notes, this.cards, this.packs, this.picks, this.palette,
     this.type,});
 
   GttPattern.fromXml(XmlElement patternElement) {
-    name = patternElement.getElement('Name').innerText;
+    name = patternElement.getElement('Name')!.innerText;
     type = patternElement.getAttribute('Type');
     notes = patternElement.getElement('Notes')!=null
-        ? patternElement.getElement('Notes').descendants.map((e) =>
+        ? patternElement.getElement('Notes')?.descendants.map((e) =>
           e.innerText.trim()).join('\n').trim()
         : '';
     cards = Cards.fromXml(patternElement.getElement('Cards'));
@@ -83,13 +84,13 @@ class GttPattern {
 
   void toXml(final XmlBuilder patternBuilder) {
     patternBuilder.element('Pattern', nest: () {
-      patternBuilder.attribute('Type', type);
+      patternBuilder.attribute('Type', type!);
       patternBuilder.element('Name', nest: () {
-        patternBuilder.cdata(name);
+        patternBuilder.cdata(name!);
       });
       notes = (notes??'')+'\nExported from JTT';
       patternBuilder.element('Notes', nest: () {
-        notes.split('\n')
+        notes!.split('\n')
             .where((element) => element!=null && element.isNotEmpty)
             .toList().asMap().forEach((index,element) {
           patternBuilder.element('L${index+1}', nest: () {
@@ -97,11 +98,11 @@ class GttPattern {
           });
         });
       });
-      cards.toXml(patternBuilder);
+      cards!.toXml(patternBuilder);
       packs ??= Packs(count: 0);
-      packs.toXml(patternBuilder);
-      picks.toXml(patternBuilder);
-      palette.toxml(patternBuilder);
+      packs!.toXml(patternBuilder);
+      picks!.toXml(patternBuilder);
+      palette!.toxml(patternBuilder);
     });
   }
 
@@ -115,22 +116,22 @@ class GttPattern {
 
 class Cards {
 
-  List<Card> card;
-  int count;
+  late List<Card> card;
+  int? count;
 
   Cards(this.card) {
     count = card.length;
   }
 
   Cards.fromXml(XmlElement cardsXml) {
-    count = int.tryParse(cardsXml.getAttribute('Count'));
+    count = int.tryParse(cardsXml.getAttribute('Count')!);
     card = cardsXml.findElements('Card').map((element) => Card.fromXml(element))
         .toList();
   }
 
   void toXml(final XmlBuilder builder) {
     builder.element('Cards', nest: () {
-      builder.attribute('Count', count);
+      builder.attribute('Count', count!);
       card.forEach((element) { 
         element.toXml(builder);
       });
@@ -145,13 +146,13 @@ class Cards {
 
 class Card {
 
-  Holes holes;
-  Threading threading;
-  Threading curThread;
-  String curPos;
-  Holes curHoles;
-  String cardHoles;
-  String number;
+  Holes? holes;
+  Threading? threading;
+  Threading? curThread;
+  String? curPos;
+  Holes? curHoles;
+  String? cardHoles;
+  String? number;
 
   Card({
     this.holes,
@@ -167,23 +168,23 @@ class Card {
 
     cardHoles = cardElement.getAttribute('Holes');
     number = cardElement.getAttribute('Number');
-    holes = Holes.fromXml(cardElement.getElement('Holes'));
-    threading = cardElement.getElement('Threading').innerText == 'Z'
+    holes = Holes.fromXml(cardElement.getElement('Holes')!);
+    threading = cardElement.getElement('Threading')!.innerText == 'Z'
         ? Threading.Z
         : Threading.S;
-    curThread = cardElement.getElement('CurThread').innerText == 'Z'
+    curThread = cardElement.getElement('CurThread')!.innerText == 'Z'
         ? Threading.Z
         : Threading.S;
-    curPos = cardElement.getElement('CurThread').innerText;
-    curHoles = Holes.fromXml(cardElement.getElement('CurHoles'));
+    curPos = cardElement.getElement('CurThread')!.innerText;
+    curHoles = Holes.fromXml(cardElement.getElement('CurHoles')!);
 
   }
   
   void toXml(XmlBuilder builder) {
     builder.element('Card', nest: () {
-      builder.attribute('Holes', cardHoles);
-      builder.attribute('Number', number);
-      holes.toXml(builder, 'Holes');
+      builder.attribute('Holes', cardHoles!);
+      builder.attribute('Number', number!);
+      holes!.toXml(builder, 'Holes');
       builder.element('Threading', nest: () {
         builder.text(threading==Threading.S?'S':'Z');
       });
@@ -191,9 +192,9 @@ class Card {
         builder.text(curThread==Threading.S?'S':'Z');
       });
       builder.element('CurPos', nest: () {
-        builder.text(curPos);
+        builder.text(curPos!);
       });
-      holes.toXml(builder, 'CurHoles');
+      holes!.toXml(builder, 'CurHoles');
     });
   }
 
@@ -207,8 +208,8 @@ class Card {
 
 class Holes {
 
-  List<int> colour;
-  int count;
+  List<int?>? colour;
+  int? count;
 
   Holes({
     this.colour,
@@ -216,17 +217,17 @@ class Holes {
   });
 
   Holes.fromXml(XmlElement holesElement) {
-    count = int.tryParse(holesElement.getAttribute('Count'));
+    count = int.tryParse(holesElement.getAttribute('Count')!);
     colour = holesElement.findElements('Colour').map((e) => int.tryParse(e.innerText)).toList();
   }
 
 
   void toXml(XmlBuilder builder, String name) {
     builder.element(name, nest: () {
-      builder.attribute('Count', count);
-      colour.asMap().forEach((index, element) {
+      builder.attribute('Count', count!);
+      colour!.asMap().forEach((index, element) {
         builder.element('Colour', nest: () {
-          builder.text(colour[index]);
+          builder.text(colour![index]!);
         });
       });
     });
@@ -240,8 +241,8 @@ class Holes {
 }
 
 class Packs {
-  List<Pack> packs;
-  int count;
+  List<Pack>? packs;
+  int? count;
 
   Packs({
     this.packs,
@@ -249,15 +250,15 @@ class Packs {
   });
 
   Packs.fromXml(XmlElement packsElement) {
-    count = int.tryParse(packsElement.getAttribute('Count'));
+    count = int.tryParse(packsElement.getAttribute('Count')!);
     packs = packsElement.findElements('Pack').map((e) => Pack.fromXml(e)).toList();
   }
 
   void toXml(final XmlBuilder builder) {
     builder.element('Packs', nest: () {
-      builder.attribute('Count', count);
+      builder.attribute('Count', count!);
       if (packs!=null) {
-        packs.forEach((element) {
+        packs!.forEach((element) {
           element.toXml(builder);
         });
       }
@@ -271,33 +272,33 @@ class Packs {
 }
 
 class Pack {
-  String name;
-  String comment;
-  int size;
-  List<int> cardIndexs;
+  String? name;
+  String? comment;
+  int? size;
+  List<int?>? cardIndexs;
 
   Pack({this.name, this.comment, this.size, this.cardIndexs});
 
   Pack.fromXml(XmlElement packElement) {
     name = packElement.getAttribute('Name');
-    comment = packElement.getElement('Comment').innerText;
-    size = int.tryParse(packElement.getElement('Size').innerText);
-    cardIndexs = packElement.getElement('Cards').innerText
+    comment = packElement.getElement('Comment')!.innerText;
+    size = int.tryParse(packElement.getElement('Size')!.innerText);
+    cardIndexs = packElement.getElement('Cards')!.innerText
         .split(',')
         .map((element) => int.tryParse(element)).toList();
   }
   
   void toXml(XmlBuilder builder) {
     builder.element('Pack', nest: () {
-      builder.attribute('Name', name);
+      builder.attribute('Name', name!);
       builder.element('Comment', nest: () {
         builder.cdata(comment??'');
       });
       builder.element('Size', nest: () {
-        builder.text(size);
+        builder.text(size!);
       });
       builder.element('Cards', nest: () {
-        builder.text(cardIndexs.join(','));
+        builder.text(cardIndexs!.join(','));
       });
     });
   }
@@ -310,9 +311,9 @@ class Pack {
 }
 
 class Palette {
-  List<Colour> colour;
-  String name;
-  int size;
+  List<Colour>? colour;
+  String? name;
+  int? size;
 
   Palette({
     this.colour,
@@ -322,19 +323,19 @@ class Palette {
 
   Palette.fromXml(XmlElement paletteElement) {
     name = paletteElement.getAttribute('Name');
-    size = int.tryParse(paletteElement.getAttribute('Size'));
+    size = int.tryParse(paletteElement.getAttribute('Size')!);
     colour = paletteElement.findElements('Colour').map((e) => Colour.fromXml(e)).toList();
   }
 
 
   void toxml(XmlBuilder patternBuilder) {
     patternBuilder.element('Palette', nest: () {
-      patternBuilder.attribute('Name', name);
-      patternBuilder.attribute('Size', size);
-      colour.forEach((element) { 
+      patternBuilder.attribute('Name', name!);
+      patternBuilder.attribute('Size', size!);
+      colour!.forEach((element) { 
         patternBuilder.element('Colour', nest: () {
-          patternBuilder.attribute('Index', element.index);
-          patternBuilder.text(element.text);
+          patternBuilder.attribute('Index', element.index!);
+          patternBuilder.text(element.text!);
         });
       });
     });
@@ -348,8 +349,8 @@ class Palette {
 }
 
 class Colour {
-  int index;
-  String text;
+  int? index;
+  String? text;
 
   Colour({
     this.index,
@@ -357,7 +358,7 @@ class Colour {
   });
 
   Colour.fromXml(XmlElement colourElement) {
-    index = int.tryParse(colourElement.getAttribute('Index'));
+    index = int.tryParse(colourElement.getAttribute('Index')!);
     text = colourElement.innerText;
   }
 
@@ -369,7 +370,7 @@ class Colour {
 
 class Picks {
 
-  List<GttPick> pickList;
+  List<GttPick>? pickList;
 
   Picks(this.pickList);
 
@@ -380,8 +381,8 @@ class Picks {
 
   void toXml(XmlBuilder patternBuilder) {
     patternBuilder.element('Picks', nest: () {
-      patternBuilder.attribute('Count', pickList.length);
-      pickList.forEach((element) {
+      patternBuilder.attribute('Count', pickList!.length);
+      pickList!.forEach((element) {
         element.toXml(patternBuilder);
       });
     });
@@ -391,41 +392,41 @@ class Picks {
 
 class GttPick {
 
-  Actions actions;
-  int index;
+  Actions? actions;
+  int? index;
 
   GttPick({this.actions, this.index});
 
   GttPick.fromXml(XmlElement pickElement) {
-    index = int.tryParse(pickElement.getAttribute('Index'));
-    actions = Actions.fromXml(pickElement.getElement('Actions'));
+    index = int.tryParse(pickElement.getAttribute('Index')!);
+    actions = Actions.fromXml(pickElement.getElement('Actions')!);
   }
 
   void toXml(XmlBuilder patternBuilder) {
     patternBuilder.element('Pick', nest: () {
-      patternBuilder.attribute('Index', index);
-      actions.toXml(patternBuilder);
+      patternBuilder.attribute('Index', index!);
+      actions!.toXml(patternBuilder);
     });
   }
 }
 
 class Actions {
 
-  List<Action> action;
-  int count;
+  late List<Action> action;
+  int? count;
 
   Actions(this.action) {
    count = action.length;
   }
 
   Actions.fromXml(XmlElement actionsElement) {
-    count = int.tryParse(actionsElement.getAttribute('Count'));
+    count = int.tryParse(actionsElement.getAttribute('Count')!);
     action = actionsElement.findElements('Action').map((e) => Action.fromXml(e)).toList();
   }
 
   void toXml(XmlBuilder patternBuilder) {
     patternBuilder.element('Actions', nest: () {
-      patternBuilder.attribute('Count', count);
+      patternBuilder.attribute('Count', count!);
       action.forEach((element) {
         element.toXml(patternBuilder);
       });
@@ -436,11 +437,11 @@ class Actions {
 
 class Action {
 
-  Type type;
-  Target target;
+  Type? type;
+  Target? target;
   dynamic targetId;
-  Dir dir;
-  int dist;
+  Dir? dir;
+  int? dist;
 
   Action({
     this.type,
@@ -453,7 +454,7 @@ class Action {
   Action.fromXml(XmlElement actionElement) {
     type = actionElement.getAttribute('Type')=='Turn'?Type.TURN:Type.TWIST;
     target = actionElement.getAttribute('Target')=='Pack'?Target.PACK:Target.CARD;
-    final tid = actionElement.getAttribute('TargetID');
+    final tid = actionElement.getAttribute('TargetID')!;
     targetId = int.tryParse(tid)??tid;
     switch(actionElement.getAttribute('Dir')) {
       case 'F':
@@ -465,7 +466,7 @@ class Action {
       default:
         dir = Dir.I;
     }
-    dist = int.tryParse(actionElement.getAttribute('Dir'));
+    dist = int.tryParse(actionElement.getAttribute('Dir')!);
   }
 
   void toXml(XmlBuilder patternBuilder) {
@@ -474,7 +475,7 @@ class Action {
       patternBuilder.attribute('Target', target==Target.PACK?'Pack':'Card');
       patternBuilder.attribute('TargetID', targetId);
       patternBuilder.attribute('Dir', dir==Dir.F?'F':dir==Dir.B?'B':'I');
-      patternBuilder.attribute('Dist', dist);
+      patternBuilder.attribute('Dist', dist!);
     });
   }
 

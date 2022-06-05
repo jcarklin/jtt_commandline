@@ -18,7 +18,7 @@ class Tablet {
 
   final List<Thread> threadPositions;
   final String startingTwist;
-  final List<Pick> picks;
+  final List<Pick?> picks;
   final pickCache = {};
   final int deckIndex;
 
@@ -29,9 +29,9 @@ class Tablet {
 
   Map<String, dynamic> toJson() => _$TabletToJson(this);
 
-  void turn(String turningDirection, {bool isTwist}) {
-    var lastVisible = lastPick.visibleThread.index;
-    var lastTwist = lastPick.twist;
+  void turn(String turningDirection, {bool? isTwist}) {
+    var lastVisible = lastPick!.visibleThread.index;
+    var lastTwist = lastPick!.twist;
     final newTwist = (isTwist ?? false)
         ? lastTwist==TWIST_Z ? TWIST_S : TWIST_Z
         : lastTwist;
@@ -44,9 +44,9 @@ class Tablet {
     _addPick(newTwist, turningDirection, newVisible);
   }
 
-  Pick get lastPick => picks.isEmpty ? Pick(startingTwist,TURNING_DIRECTION_IDLE, threadPositions[0]) : picks.last;
+  Pick? get lastPick => picks.isEmpty ? Pick(startingTwist,TURNING_DIRECTION_IDLE, threadPositions[0]) : picks.last;
 
-  Pick _addPick(String newTwist, String turningDirection, int newVisible) {
+  Pick? _addPick(String newTwist, String turningDirection, int newVisible) {
     final pickKey = '$newTwist$turningDirection$newVisible';
     pickCache.putIfAbsent(pickKey, () => Pick(newTwist, turningDirection, threadPositions[newVisible]));
     picks.add(pickCache[pickKey]);
@@ -66,7 +66,7 @@ class Pick {
   final Thread visibleThread; //This is the index of the Thread which is visible on the weaving.
 
   Pick(this.twist, this.turned, this.visibleThread);
-
+  
   factory Pick.fromJson(Map<String, dynamic> json) => _$PickFromJson(json);
 
   Map<String, dynamic> toJson() => _$PickToJson(this);

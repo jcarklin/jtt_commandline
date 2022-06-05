@@ -8,7 +8,7 @@ Future<void> main(List<String> arguments) async {
   final prompter = Prompter();
 
   final fromFormat = prompter.askMultiple('Select conversion format: ', buildFormatOptions());
-  final File selectedFile = prompter.askMultiple('Select the file to convert: ', buildFileOptions(fromFormat));
+  final File? selectedFile = prompter.askMultiple('Select the file to convert: ', buildFileOptions(fromFormat));
 
   final fileConversionService = fromFormat=='gtt'
       ?FileConversionService.fromGtt(selectedFile)

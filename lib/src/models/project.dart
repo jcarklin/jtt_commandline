@@ -25,14 +25,14 @@ class Project {
 
   String name;
   String type;
-  String patternType;
-  String patternSource;
-  List<Tablet> deck;
-  Map<String,List<int>> packs;
-  Map<String,List<String>> palettes; //<palettes name, hexadecimal color values>
-  String slantRepresentation = SLANT_TABLET;
-  String threadingDirection;
-  String extraInfo;
+  String? patternType;
+  String? patternSource;
+  List<Tablet>? deck;
+  late Map<String,List<int?>?> packs;
+  late Map<String,List<String>> palettes; //<palettes name, hexadecimal color values>
+  String? slantRepresentation = SLANT_TABLET;
+  String? threadingDirection;
+  String? extraInfo;
 
   //tODO clockwise anti clockwise, holeLabels,starting position (hole 1 is Front or back top)
 
