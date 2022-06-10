@@ -48,10 +48,10 @@ class FileConversionService {
     final gttPattern = gttTWdata!.pattern!;
 
     switch (gttPattern.type) {
-      case GttPattern.PATTERN_TYPE_THREADED:
+      case GttProject.PATTERN_TYPE_THREADED:
         jttProject.patternType = Project.PATTERN_TYPE_THREADED_IN;
         break;
-      case GttPattern
+      case GttProject
           .PATTERN_TYPE_DOUBLE_FACE: //|BrokenTwill|Brocade|LetteredBand}>'
         jttProject.patternType = Project.PATTERN_TYPE_DOUBLE_WEAVE;
         break;
@@ -59,7 +59,7 @@ class FileConversionService {
         throw FormatException('Unsupported Pattern Type');
     }
 
-    final gttCards = gttPattern.cards!.card;
+    final gttCards = gttPattern.cards.card;
     jttProject.deck = gttCards
         .asMap()
         .entries
@@ -114,7 +114,7 @@ class FileConversionService {
     final cardData = jttProject!.deck!
         .map((tablet) => _convertJttTabletToGttCard(tablet))
         .toList();
-    final pattern = GttPattern(
+    final pattern = GttProject(
       name: jttProject!.name,
       notes: jttProject!.extraInfo ?? 'Converted from a JTT file',
       cards: Cards(cardData),
@@ -193,11 +193,11 @@ class FileConversionService {
   String? convertJttPatternTypeToGtt(String? jttType) {
     switch (jttType) {
       case 'threadedIn':
-        return GttPattern.PATTERN_TYPE_THREADED;
+        return GttProject.PATTERN_TYPE_THREADED;
       case 'doubleWeave':
-        return GttPattern.PATTERN_TYPE_DOUBLE_FACE;
+        return GttProject.PATTERN_TYPE_DOUBLE_FACE;
       case 'brokenTwill':
-        return GttPattern.PATTERN_TYPE_BROKEN_TWILL;
+        return GttProject.PATTERN_TYPE_BROKEN_TWILL;
       default:
         return null;
     }

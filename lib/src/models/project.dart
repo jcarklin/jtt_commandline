@@ -8,7 +8,6 @@ part 'project.g.dart';
 
 @JsonSerializable()
 class Project {
-
   static const String PROJECT_TYPE_TABLET_WEAVING = 'tabletWeaving';
 
   static const String PATTERN_TYPE_THREADED_IN = 'threadedIn';
@@ -20,7 +19,8 @@ class Project {
   static const String SLANT_ARROWS = 'arrows';
 
   static const String THREADING_DIRECTION_CLOCKWISE = 'clockwise'; //DA CB
-  static const String THREADING_DIRECTION_ANTICLOCKWISE = 'anticlockwise'; //AD BC
+  static const String THREADING_DIRECTION_ANTICLOCKWISE =
+      'anticlockwise'; //AD BC
   static const String THREADING_DIRECTION_POLES = 'poles'; // TF TB BF BB
 
   String name;
@@ -28,39 +28,33 @@ class Project {
   String? patternType;
   String? patternSource;
   List<Tablet>? deck;
-  late Map<String,List<int?>?> packs;
-  late Map<String,List<String>> palettes; //<palettes name, hexadecimal color values>
+  late Map<String, List<int?>?> packs;
+  late Map<String, List<String>>? palettes; //palettes name, hex color values
   String? slantRepresentation = SLANT_TABLET;
   String? threadingDirection;
   String? extraInfo;
 
   //tODO clockwise anti clockwise, holeLabels,starting position (hole 1 is Front or back top)
 
-  Project (this.name, this.type, {this.patternType, this.patternSource,
-    this.deck, this.slantRepresentation, this.threadingDirection, this.extraInfo}) {
+  Project(this.name, this.type,
+      {this.patternType,
+      this.patternSource,
+      this.deck,
+      this.slantRepresentation,
+      this.threadingDirection,
+      this.extraInfo}) {
     slantRepresentation = slantRepresentation ?? SLANT_TABLET;
-    threadingDirection = threadingDirection ?? THREADING_DIRECTION_ANTICLOCKWISE;
+    threadingDirection =
+        threadingDirection ?? THREADING_DIRECTION_ANTICLOCKWISE;
   }
 
-  factory Project.fromJson(Map<String, dynamic> json) => _$ProjectFromJson(json);
+  factory Project.fromJson(Map<String, dynamic> json) =>
+      _$ProjectFromJson(json);
 
   Map<String, dynamic> toJson() => _$ProjectToJson(this);
-  
-  Future<String> toJttFile(String filename) {
-    return Future.sync(() {
-      return File(filename).writeAsString(toString())
-          .catchError(() {
-        return 'Writing File $filename Failed!!';
-      })
-          .then((value) {
-        return 'File $filename successfully written';
-      });
-    });
-  }
 
   @override
   String toString() {
     return JsonEncoder.withIndent('  ').convert(this);
   }
 }
-
