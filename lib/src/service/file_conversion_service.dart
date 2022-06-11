@@ -138,7 +138,7 @@ class FileConversionService {
 
   Future<String> writeAsGttFile() {
     return toFile(
-        '${jttFile?.path.replaceAll('.jtt', '.gtt')}', gttTWdata?.toString());
+        '${jttFile?.path.replaceAll('.jtt', '.gtt')}', gttTWdata?.toXml());
   }
 
   String _convertColorToHex(int colorDec) {
