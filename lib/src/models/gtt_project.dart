@@ -18,10 +18,10 @@ class TwData {
     //builder.processing('xml', 'version="1.0"');
     builder.element('TWData', nest: () {
       builder.element('Source', nest: () {
-        builder.text(source!);
+        builder.text(source);
       });
       builder.element('Version', nest: () {
-        builder.text(version!);
+        builder.text(version);
       });
       pattern.toXml(builder);
     });
@@ -86,15 +86,15 @@ class GttProject {
 
   void toXml(final XmlBuilder patternBuilder) {
     patternBuilder.element('Pattern', nest: () {
-      patternBuilder.attribute('Type', type!);
+      patternBuilder.attribute('Type', type);
       patternBuilder.element('Name', nest: () {
-        patternBuilder.cdata(name!);
+        patternBuilder.cdata(name);
       });
       notes = (notes ?? '') + '\nExported from JTT';
       patternBuilder.element('Notes', nest: () {
         notes!
             .split('\n')
-            .where((element) => element != null && element.isNotEmpty)
+            .where((element) => element.isNotEmpty)
             .toList()
             .asMap()
             .forEach((index, element) {
@@ -273,15 +273,15 @@ class Packs {
 }
 
 class Pack {
-  String? name;
+  late String name;
   String? comment;
   int? size;
   List<int?>? cardIndexs;
 
-  Pack({this.name, this.comment, this.size, this.cardIndexs});
+  Pack({required this.name, this.comment, this.size, this.cardIndexs});
 
   Pack.fromXml(XmlElement packElement) {
-    name = packElement.getAttribute('Name');
+    name = packElement.getAttribute('Name') ?? 'Unknown';
     comment = packElement.getElement('Comment')!.innerText;
     size = int.tryParse(packElement.getElement('Size')!.innerText);
     cardIndexs = packElement
@@ -294,7 +294,7 @@ class Pack {
 
   void toXml(XmlBuilder builder) {
     builder.element('Pack', nest: () {
-      builder.attribute('Name', name!);
+      builder.attribute('Name', name);
       builder.element('Comment', nest: () {
         builder.cdata(comment ?? '');
       });
@@ -315,18 +315,18 @@ class Pack {
 
 class Palette {
   List<Colour>? colour;
-  String? name;
-  int? size;
+  late String name;
+  late int size;
 
   Palette({
     this.colour,
-    this.name,
-    this.size,
+    required this.name,
+    required this.size,
   });
 
   Palette.fromXml(XmlElement paletteElement) {
-    name = paletteElement.getAttribute('Name');
-    size = int.tryParse(paletteElement.getAttribute('Size')!);
+    name = paletteElement.getAttribute('Name') ?? 'Unknown';
+    size = int.tryParse(paletteElement.getAttribute('Size') ?? '0') ?? 0;
     colour = paletteElement
         .findElements('Colour')
         .map((e) => Colour.fromXml(e))
@@ -335,8 +335,8 @@ class Palette {
 
   void toxml(XmlBuilder patternBuilder) {
     patternBuilder.element('Palette', nest: () {
-      patternBuilder.attribute('Name', name!);
-      patternBuilder.attribute('Size', size!);
+      patternBuilder.attribute('Name', name);
+      patternBuilder.attribute('Size', size);
       colour!.forEach((element) {
         patternBuilder.element('Colour', nest: () {
           patternBuilder.attribute('Index', element.index!);

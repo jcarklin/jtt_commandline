@@ -6,28 +6,25 @@ import 'package:jtt_commandline/src/models/gtt_project.dart';
 import 'package:jtt_commandline/src/models/project.dart';
 import 'package:jtt_commandline/src/models/tablet.dart';
 import 'package:jtt_commandline/src/models/thread.dart';
+import 'package:jtt_commandline/src/utils.dart';
 import 'package:xml/xml.dart';
 
 class FileConversionService {
   TwData? _twData;
   Project? _jttProject;
   File? gttFile;
-  late File? jttFile;
+  File? jttFile;
 
-  FileConversionService.fromGtt(File? gttXml) {
+  FileConversionService.fromGtt(File gttXml) {
     gttFile = gttXml;
-    if (gttFile != null) {
-      _twData = _fromGttXml(gttFile!.readAsStringSync());
-      _jttProject = _fromTwData();
-    }
+    _twData = _fromGttXml(gttXml.readAsStringSync());
+    _jttProject = _fromTwData();
   }
 
-  FileConversionService.fromJtt(File? jttJson) {
+  FileConversionService.fromJtt(File jttJson) {
     jttFile = jttJson;
-    if (jttJson != null) {
-      _jttProject = _fromJttJson(jttJson.readAsStringSync());
-      _twData = _fromJttProject();
-    }
+    _jttProject = _fromJttJson(jttJson.readAsStringSync());
+    _twData = _fromJttProject();
   }
 
   TwData? get gttTWdata => _twData;
@@ -40,12 +37,12 @@ class FileConversionService {
 
   Project _fromTwData() {
     final jttProject = Project(
-        gttTWdata!.pattern!.name, Project.PROJECT_TYPE_TABLET_WEAVING,
+        gttTWdata!.pattern.name, Project.PROJECT_TYPE_TABLET_WEAVING,
         patternSource: gttTWdata!.source,
         slantRepresentation: Project.SLANT_THREAD,
-        patternType: gttTWdata!.pattern!.type,
-        extraInfo: gttTWdata!.pattern!.notes);
-    final gttPattern = gttTWdata!.pattern!;
+        patternType: gttTWdata!.pattern.type,
+        extraInfo: gttTWdata!.pattern.notes);
+    final gttPattern = gttTWdata!.pattern;
 
     switch (gttPattern.type) {
       case GttProject.PATTERN_TYPE_THREADED:
@@ -65,12 +62,16 @@ class FileConversionService {
         .entries
         .map((e) => _convertGttCardToTablet(e.key, e.value))
         .toList();
-    final Map<String?, List<int?>?> gttPacksMap = <String?, List<int>?>{};
+
+    final Map<String, List<int?>?> gttPacksMap = <String, List<int>?>{};
     gttPattern.packs!.packs!
         .forEach((pack) => gttPacksMap[pack.name] = pack.cardIndexs);
     final iter = gttPattern.palette!.colour!
         .map((e) => _convertColorToHex(int.tryParse(e.text!)!));
-    jttProject.palettes = {gttPattern.palette!.name: iter.toList()};
+    var gttpalette = gttPattern.palette;
+    if (gttpalette != null) {
+      jttProject.palettes = {gttpalette.name: iter.toList()};
+    }
     final gttPicks = gttPattern.picks!.pickList!;
 
     gttPicks.forEach((actionParent) {
@@ -105,7 +106,7 @@ class FileConversionService {
     return jttProject;
   }
 
-  Project _fromJttJson(String jttJson) {
+  Project? _fromJttJson(String jttJson) {
     _jttProject = Project.fromJson(jsonDecode(jttJson));
     return jttProject;
   }
@@ -124,15 +125,20 @@ class FileConversionService {
       packs: convertJttPacksToGtt(jttProject!.packs),
     );
     return TwData(
-        source: jttProject!.patternSource, version: '1.15', pattern: pattern);
+        source: jttProject!.patternSource ?? 'Unknown',
+        version: '1.15',
+        pattern: pattern);
   }
 
   Future<String> writeAsJttFile() {
-    return jttProject!.toJttFile('${gttFile!.path.replaceAll('.gtt', '.jtt')}');
+    //return jttProject!.toJttFile();
+    return toFile(
+        '${gttFile!.path.replaceAll('.gtt', '.jtt')}', jttProject?.toString());
   }
 
   Future<String> writeAsGttFile() {
-    return gttTWdata!.toGttFile('${jttFile.path.replaceAll('.jtt', '.gtt')}');
+    return toFile(
+        '${jttFile?.path.replaceAll('.jtt', '.gtt')}', gttTWdata?.toString());
   }
 
   String _convertColorToHex(int colorDec) {
@@ -190,7 +196,7 @@ class FileConversionService {
         count: threads.length);
   }
 
-  String? convertJttPatternTypeToGtt(String? jttType) {
+  String convertJttPatternTypeToGtt(String? jttType) {
     switch (jttType) {
       case 'threadedIn':
         return GttProject.PATTERN_TYPE_THREADED;
@@ -199,12 +205,12 @@ class FileConversionService {
       case 'brokenTwill':
         return GttProject.PATTERN_TYPE_BROKEN_TWILL;
       default:
-        return null;
+        return GttProject.PATTERN_TYPE_THREADED;
     }
   }
 
-  Palette convertJttPaletteTypeToGtt(Map<String?, List<String>> palettes) {
-    final name = palettes.keys.first;
+  Palette convertJttPaletteTypeToGtt(Map<String?, List<String>>? palettes) {
+    final name = palettes!.keys.first ?? '';
     final colours = palettes.values.first
         .asMap()
         .entries
@@ -254,7 +260,7 @@ class FileConversionService {
   Packs convertJttPacksToGtt(Map<String?, List<int?>?> jttPacks) {
     final gttPacksList = jttPacks.entries
         .map((entry) => Pack(
-            name: entry.key,
+            name: entry.key!,
             size: entry.value!.length,
             cardIndexs: entry.value))
         .toList();
